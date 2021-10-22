@@ -16,8 +16,9 @@
   },
   "license": "ISC",
   "author": "Dan Finlay",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "setup": "yarn install && yarn allow-scripts",
     "lint:eslint": "eslint . --cache --ext js,ts",
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
@@ -27,8 +28,9 @@
   },
   "dependencies": {
     "@metamask/eth-sig-util": "^4.0.0",
-    "bip39": "^2.2.0",
-    "eth-simple-keyring": "^4.2.0",
+    "@rabby-wallet/eth-simple-keyring": "^4.2.1",
+    "bip39": "^3.0.4",
+    "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.0.9",
     "ethereumjs-wallet": "^1.0.1"
   },
@@ -46,7 +48,8 @@
     "eslint-plugin-prettier": "^3.3.1",
     "mocha": "^8.1.3",
     "prettier": "^2.4.1",
-    "prettier-plugin-packagejson": "^2.2.12"
+    "prettier-plugin-packagejson": "^2.2.12",
+    "typescript": "^4.4.4"
   },
   "engines": {
     "node": ">= 12.0.0"

@@ -8,8 +8,7 @@ const {
   SignTypedDataVersion,
 } = require('@metamask/eth-sig-util');
 const ethUtil = require('ethereumjs-util');
-const HdKeyring = require('..');
-
+const HdKeyring = require('..').default;
 // Sample account:
 const privKeyHex =
   'b8a9c05beeedb25df85f8d641538cbffedf67216048de9c678ee26260eb91952';
@@ -29,7 +28,7 @@ describe('hd-keyring', function () {
     it('constructs', function (done) {
       keyring = new HdKeyring({
         mnemonic: sampleMnemonic,
-        numberOfAccounts: 2,
+        activeIndexes: [0, 1],
       });
 
       keyring.getAccounts().then((accounts) => {
@@ -66,23 +65,18 @@ describe('hd-keyring', function () {
 
   describe('#deserialize a private key', function () {
     it('serializes what it deserializes', function (done) {
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+      });
+      assert.equal(keyring.wallets.length, 1, 'restores two accounts');
+      keyring.addAccounts(1);
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-        })
-        .then(() => {
-          assert.equal(keyring.wallets.length, 1, 'restores two accounts');
-          return keyring.addAccounts(1);
-        })
-        .then(() => {
-          return keyring.getAccounts();
-        })
+        .getAccounts()
         .then((accounts) => {
           assert.equal(accounts[0], firstAcct);
           assert.equal(accounts[1], secondAcct);
           assert.equal(accounts.length, 2);
-
           return keyring.serialize();
         })
         .then((serialized) => {
@@ -139,14 +133,13 @@ describe('hd-keyring', function () {
       const address = firstAcct;
       const message = '0x68656c6c6f20776f726c64';
 
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+      });
+
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-        })
-        .then(() => {
-          return keyring.signPersonalMessage(address, message);
-        })
+        .signPersonalMessage(address, message)
         .then((signature) => {
           assert.notEqual(signature, message, 'something changed');
 
@@ -224,7 +217,7 @@ describe('hd-keyring', function () {
 
       await keyring.deserialize({
         mnemonic: sampleMnemonic,
-        numberOfAccounts: 1,
+        activeIndexes: [0],
       });
       const addresses = await keyring.getAccounts();
       const address = addresses[0];
@@ -295,15 +288,14 @@ describe('hd-keyring', function () {
     it('can deserialize with an hdPath param and generate the same accounts.', function (done) {
       const hdPathString = `m/44'/60'/0'/0`;
 
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+        hdPath: hdPathString,
+      });
+
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-          hdPath: hdPathString,
-        })
-        .then(() => {
-          return keyring.getAccounts();
-        })
+        .getAccounts()
         .then((addresses) => {
           assert.equal(addresses[0], firstAcct);
           return keyring.serialize();
@@ -320,15 +312,14 @@ describe('hd-keyring', function () {
     it('can deserialize with an hdPath param and generate different accounts.', function (done) {
       const hdPathString = `m/44'/60'/0'/1`;
 
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+        hdPath: hdPathString,
+      });
+
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-          hdPath: hdPathString,
-        })
-        .then(() => {
-          return keyring.getAccounts();
-        })
+        .getAccounts()
         .then((addresses) => {
           assert.notEqual(addresses[0], firstAcct);
           return keyring.serialize();
@@ -381,7 +372,7 @@ describe('hd-keyring', function () {
 
       keyring = new HdKeyring({
         mnemonic: sampleMnemonic,
-        numberOfAccounts: 1,
+        activeIndexes: [0],
       });
       const appKeyAddress = await keyring.getAppKeyAddress(
         address,
@@ -398,7 +389,7 @@ describe('hd-keyring', function () {
     it('should return different addresses when provided different app key origins', async function () {
       keyring = new HdKeyring({
         mnemonic: sampleMnemonic,
-        numberOfAccounts: 1,
+        activeIndexes: [0],
       });
 
       const address = firstAcct;
@@ -423,7 +414,7 @@ describe('hd-keyring', function () {
     it('should return the same address when called multiple times with the same params', async function () {
       keyring = new HdKeyring({
         mnemonic: sampleMnemonic,
-        numberOfAccounts: 1,
+        activeIndexes: [0],
       });
 
       const address = firstAcct;
@@ -457,15 +448,14 @@ describe('hd-keyring', function () {
       );
       const expectedSig = personalSign({ privateKey, data: message });
 
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+      });
+
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-        })
-        .then(() => {
-          return keyring.signPersonalMessage(address, message, {
-            withAppKeyOrigin: 'someapp.origin.io',
-          });
+        .signPersonalMessage(address, message, {
+          withAppKeyOrigin: 'someapp.origin.io',
         })
         .then((sig) => {
           assert.equal(sig, expectedSig, 'signed with app key');
@@ -498,15 +488,14 @@ describe('hd-keyring', function () {
         version: SignTypedDataVersion.V3,
       });
 
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0],
+      });
+
       keyring
-        .deserialize({
-          mnemonic: sampleMnemonic,
-          numberOfAccounts: 1,
-        })
-        .then(() => {
-          return keyring.signTypedData_v3(address, typedData, {
-            withAppKeyOrigin: 'someapp.origin.io',
-          });
+        .signTypedData_v3(address, typedData, {
+          withAppKeyOrigin: 'someapp.origin.io',
         })
         .then((sig) => {
           assert.equal(sig, expectedSig, 'signed with app key');
