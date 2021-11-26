@@ -122,9 +122,7 @@ class HdKeyring extends SimpleKeyring {
   getAddresses(start: number, end: number) {
     const from = start;
     const to = end;
-
     const accounts: any[] = [];
-
     for (let i = from; i < to; i++) {
       const [address] = this._addressFromIndex(i);
       accounts.push({
@@ -132,9 +130,9 @@ class HdKeyring extends SimpleKeyring {
         index: i,
       });
     }
-
     return accounts;
   }
+  
   async __getPage(
     increment: number
   ): Promise<
