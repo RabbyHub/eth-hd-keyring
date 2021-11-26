@@ -1,6 +1,6 @@
 {
   "name": "@rabby-wallet/eth-hd-keyring",
-  "version": "3.6.1",
+  "version": "3.6.2",
   "description": "A simple standard interface for a seed phrase generated set of Ethereum accounts.",
   "keywords": [
     "ethereum",
