@@ -127,7 +127,7 @@ class HdKeyring extends SimpleKeyring {
       const [address] = this._addressFromIndex(i);
       accounts.push({
         address,
-        index: i,
+        index: i+1,
       });
     }
     return accounts;

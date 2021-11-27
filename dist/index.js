@@ -132,7 +132,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
             const [address] = this._addressFromIndex(i);
             accounts.push({
                 address,
-                index: i,
+                index: i + 1,
             });
         }
         return accounts;
