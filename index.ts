@@ -127,7 +127,7 @@ class HdKeyring extends SimpleKeyring {
       const [address] = this._addressFromIndex(i);
       accounts.push({
         address,
-        index: i+1,
+        index: i + 1,
       });
     }
     return accounts;
@@ -156,7 +156,7 @@ class HdKeyring extends SimpleKeyring {
       const [address] = this._addressFromIndex(i);
       accounts.push({
         address,
-        index: i,
+        index: i + 1,
       });
     }
 
@@ -167,7 +167,7 @@ class HdKeyring extends SimpleKeyring {
     return Promise.resolve(
       this.wallets.map((w) => {
         return sigUtil.normalize(w.getAddress().toString('hex'));
-      })
+      }),
     );
   }
 
