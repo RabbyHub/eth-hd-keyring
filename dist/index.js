@@ -161,6 +161,14 @@ class HdKeyring extends eth_simple_keyring_1.default {
             return sigUtil.normalize(w.getAddress().toString('hex'));
         }));
     }
+    getIndexByAddress(address) {
+        for (const key in this._index2wallet) {
+            if (this._index2wallet[key][0] === address) {
+                return Number(key);
+            }
+        }
+        return null;
+    }
     /* PRIVATE METHODS */
     _addressFromIndex(i) {
         if (!this._index2wallet[i]) {
