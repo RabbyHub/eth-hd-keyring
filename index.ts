@@ -158,6 +158,15 @@ class HdKeyring extends SimpleKeyring {
     );
   }
 
+  getIndexByAddress(address: string): number | null {
+    for (const key in this._index2wallet) {
+      if (this._index2wallet[key][0] === address) {
+        return Number(key);
+      }
+    }
+    return null;
+  }
+
   /* PRIVATE METHODS */
 
   _addressFromIndex(i: number): [string, Wallet] {
