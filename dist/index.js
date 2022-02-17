@@ -163,7 +163,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
     }
     getIndexByAddress(address) {
         for (const key in this._index2wallet) {
-            if (this._index2wallet[key][0] === address) {
+            if (this._index2wallet[key][0].toLowerCase() === address.toLowerCase()) {
                 return Number(key);
             }
         }

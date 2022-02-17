@@ -173,7 +173,7 @@ class HdKeyring extends SimpleKeyring {
 
   getIndexByAddress(address: string): number | null {
     for (const key in this._index2wallet) {
-      if (this._index2wallet[key][0] === address) {
+      if (this._index2wallet[key][0].toLowerCase() === address.toLowerCase()) {
         return Number(key);
       }
     }
