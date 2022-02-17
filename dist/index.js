@@ -50,7 +50,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this._index2wallet = {};
         this.activeIndexes = [];
         this.page = 0;
-        this.perPage = 5;
+        this.perPage = 10;
         this.deserialize(opts);
     }
     serialize() {
@@ -124,6 +124,19 @@ class HdKeyring extends eth_simple_keyring_1.default {
     getPreviousPage() {
         return this.__getPage(-1);
     }
+    getAddresses(start, end) {
+        const from = start;
+        const to = end;
+        const accounts = [];
+        for (let i = from; i < to; i++) {
+            const [address] = this._addressFromIndex(i);
+            accounts.push({
+                address,
+                index: i + 1,
+            });
+        }
+        return accounts;
+    }
     __getPage(increment) {
         return __awaiter(this, void 0, void 0, function* () {
             this.page += increment;
@@ -137,7 +150,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
                 const [address] = this._addressFromIndex(i);
                 accounts.push({
                     address,
-                    index: i,
+                    index: i + 1,
                 });
             }
             return accounts;

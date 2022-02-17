@@ -25,7 +25,7 @@ class HdKeyring extends SimpleKeyring {
   _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
   page = 0;
-  perPage = 5;
+  perPage = 10;
 
   /* PUBLIC METHODS */
   constructor(opts = {}) {
@@ -119,7 +119,20 @@ class HdKeyring extends SimpleKeyring {
   getPreviousPage() {
     return this.__getPage(-1);
   }
-
+  getAddresses(start: number, end: number) {
+    const from = start;
+    const to = end;
+    const accounts: any[] = [];
+    for (let i = from; i < to; i++) {
+      const [address] = this._addressFromIndex(i);
+      accounts.push({
+        address,
+        index: i + 1,
+      });
+    }
+    return accounts;
+  }
+  
   async __getPage(
     increment: number
   ): Promise<
@@ -143,7 +156,7 @@ class HdKeyring extends SimpleKeyring {
       const [address] = this._addressFromIndex(i);
       accounts.push({
         address,
-        index: i,
+        index: i + 1,
       });
     }
 
@@ -154,7 +167,7 @@ class HdKeyring extends SimpleKeyring {
     return Promise.resolve(
       this.wallets.map((w) => {
         return sigUtil.normalize(w.getAddress().toString('hex'));
-      })
+      }),
     );
   }
 
