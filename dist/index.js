@@ -50,7 +50,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this._index2wallet = {};
         this.activeIndexes = [];
         this.page = 0;
-        this.perPage = 10;
+        this.perPage = 5;
         this.deserialize(opts);
     }
     serialize() {

@@ -25,7 +25,7 @@ class HdKeyring extends SimpleKeyring {
   _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
   page = 0;
-  perPage = 10;
+  perPage = 5;
 
   /* PUBLIC METHODS */
   constructor(opts = {}) {
