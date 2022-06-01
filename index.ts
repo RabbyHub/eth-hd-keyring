@@ -11,6 +11,7 @@ interface DeserializeOption {
   hdPath?: string;
   mnemonic?: string;
   activeIndexes?: number[];
+  byImport?: boolean;
 }
 
 class HdKeyring extends SimpleKeyring {
@@ -26,6 +27,7 @@ class HdKeyring extends SimpleKeyring {
   activeIndexes: number[] = [];
   page = 0;
   perPage = 5;
+  byImport = false;
 
   /* PUBLIC METHODS */
   constructor(opts = {}) {
@@ -38,6 +40,7 @@ class HdKeyring extends SimpleKeyring {
       mnemonic: this.mnemonic,
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
+      byImport: this.byImport,
     });
   }
 
@@ -46,6 +49,7 @@ class HdKeyring extends SimpleKeyring {
     this.mnemonic = null;
     this.root = null;
     this.hdPath = opts.hdPath || hdPathString;
+    this.byImport = !!opts.byImport;
 
     if (opts.mnemonic) {
       this.initFromMnemonic(opts.mnemonic);
@@ -132,10 +136,8 @@ class HdKeyring extends SimpleKeyring {
     }
     return accounts;
   }
-  
-  async __getPage(
-    increment: number
-  ): Promise<
+
+  async __getPage(increment: number): Promise<
     Array<{
       address: string;
       index: string;
