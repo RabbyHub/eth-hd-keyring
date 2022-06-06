@@ -12,6 +12,7 @@ interface DeserializeOption {
   mnemonic?: string;
   activeIndexes?: number[];
   byImport?: boolean;
+  index?: number;
 }
 
 class HdKeyring extends SimpleKeyring {
@@ -25,6 +26,7 @@ class HdKeyring extends SimpleKeyring {
   wallets: Wallet[] = [];
   _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
+  index = 0;
   page = 0;
   perPage = 5;
   byImport = false;
@@ -41,6 +43,7 @@ class HdKeyring extends SimpleKeyring {
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
       byImport: this.byImport,
+      index: this.index,
     });
   }
 
@@ -50,6 +53,7 @@ class HdKeyring extends SimpleKeyring {
     this.root = null;
     this.hdPath = opts.hdPath || hdPathString;
     this.byImport = !!opts.byImport;
+    this.index = opts.index || 0;
 
     if (opts.mnemonic) {
       this.initFromMnemonic(opts.mnemonic);

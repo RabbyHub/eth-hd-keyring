@@ -49,6 +49,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this.wallets = [];
         this._index2wallet = {};
         this.activeIndexes = [];
+        this.index = 0;
         this.page = 0;
         this.perPage = 5;
         this.byImport = false;
@@ -60,6 +61,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
             activeIndexes: this.activeIndexes,
             hdPath: this.hdPath,
             byImport: this.byImport,
+            index: this.index,
         });
     }
     deserialize(opts = {}) {
@@ -68,6 +70,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this.root = null;
         this.hdPath = opts.hdPath || hdPathString;
         this.byImport = !!opts.byImport;
+        this.index = opts.index || 0;
         if (opts.mnemonic) {
             this.initFromMnemonic(opts.mnemonic);
         }
