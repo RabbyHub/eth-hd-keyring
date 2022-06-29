@@ -141,6 +141,12 @@ class HdKeyring extends SimpleKeyring {
     return accounts;
   }
 
+  removeAccount(address) {
+    super.removeAccount(address);
+    const index = this.getIndexByAddress(address);
+    this.activeIndexes = this.activeIndexes.filter((i) => i !== index);
+  }
+
   async __getPage(increment: number): Promise<
     Array<{
       address: string;

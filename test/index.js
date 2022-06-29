@@ -507,4 +507,20 @@ describe('hd-keyring', function () {
         });
     });
   });
+
+  describe('removeAccount', function () {
+    it('should return correct activeIndexes', async function () {
+      const address = firstAcct;
+
+      keyring = new HdKeyring({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 2, 3, 6],
+      });
+      await keyring.removeAccount(address);
+      const { activeIndexes } = await keyring.serialize();
+
+      assert.equal(activeIndexes.length, 3);
+      assert.deepEqual(activeIndexes, [2, 3, 6]);
+    });
+  });
 });

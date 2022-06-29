@@ -143,6 +143,11 @@ class HdKeyring extends eth_simple_keyring_1.default {
         }
         return accounts;
     }
+    removeAccount(address) {
+        super.removeAccount(address);
+        const index = this.getIndexByAddress(address);
+        this.activeIndexes = this.activeIndexes.filter((i) => i !== index);
+    }
     __getPage(increment) {
         return __awaiter(this, void 0, void 0, function* () {
             this.page += increment;
