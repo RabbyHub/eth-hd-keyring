@@ -53,6 +53,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this.page = 0;
         this.perPage = 5;
         this.byImport = false;
+        this.publicKey = '';
         this.deserialize(opts);
     }
     serialize() {
@@ -62,6 +63,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
             hdPath: this.hdPath,
             byImport: this.byImport,
             index: this.index,
+            publicKey: this.publicKey,
         });
     }
     deserialize(opts = {}) {
@@ -71,6 +73,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this.hdPath = opts.hdPath || hdPathString;
         this.byImport = !!opts.byImport;
         this.index = opts.index || 0;
+        this.publicKey = opts.publicKey || '';
         if (opts.mnemonic) {
             this.initFromMnemonic(opts.mnemonic);
         }
@@ -79,12 +82,23 @@ class HdKeyring extends eth_simple_keyring_1.default {
         }
         return Promise.resolve([]);
     }
+    initPublicKey() {
+        this.root = this.hdWallet.derivePath(this.hdPath);
+        const wallet = this.root.getWallet();
+        this.publicKey = wallet.getPublicKey().toString('hex');
+    }
+    getPublicKey() {
+        return this.publicKey;
+    }
     initFromMnemonic(mnemonic) {
         this.mnemonic = mnemonic;
         this._index2wallet = {};
         const seed = bip39.mnemonicToSeedSync(mnemonic);
         this.hdWallet = ethereumjs_wallet_1.hdkey.fromMasterSeed(seed);
         this.root = this.hdWallet.derivePath(this.hdPath);
+        if (!this.publicKey) {
+            this.initPublicKey();
+        }
     }
     addAccounts(numberOfAccounts = 1) {
         if (!this.root) {
