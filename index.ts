@@ -13,6 +13,7 @@ interface DeserializeOption {
   activeIndexes?: number[];
   byImport?: boolean;
   index?: number;
+  publicKey?: string;
 }
 
 class HdKeyring extends SimpleKeyring {
@@ -30,6 +31,7 @@ class HdKeyring extends SimpleKeyring {
   page = 0;
   perPage = 5;
   byImport = false;
+  publicKey: string = '';
 
   /* PUBLIC METHODS */
   constructor(opts = {}) {
@@ -44,6 +46,7 @@ class HdKeyring extends SimpleKeyring {
       hdPath: this.hdPath,
       byImport: this.byImport,
       index: this.index,
+      publicKey: this.publicKey,
     });
   }
 
@@ -54,6 +57,7 @@ class HdKeyring extends SimpleKeyring {
     this.hdPath = opts.hdPath || hdPathString;
     this.byImport = !!opts.byImport;
     this.index = opts.index || 0;
+    this.publicKey = opts.publicKey || '';
 
     if (opts.mnemonic) {
       this.initFromMnemonic(opts.mnemonic);
@@ -66,12 +70,26 @@ class HdKeyring extends SimpleKeyring {
     return Promise.resolve([]);
   }
 
+  private initPublicKey() {
+    this.root = this.hdWallet!.derivePath(this.hdPath);
+    const wallet = this.root.getWallet();
+    this.publicKey = wallet.getPublicKey().toString('hex');
+  }
+
+  getPublicKey() {
+    return this.publicKey;
+  }
+
   initFromMnemonic(mnemonic) {
     this.mnemonic = mnemonic;
     this._index2wallet = {};
     const seed = bip39.mnemonicToSeedSync(mnemonic);
     this.hdWallet = hdkey.fromMasterSeed(seed);
     this.root = this.hdWallet!.derivePath(this.hdPath);
+
+    if (!this.publicKey) {
+      this.initPublicKey();
+    }
   }
 
   addAccounts(numberOfAccounts = 1) {
