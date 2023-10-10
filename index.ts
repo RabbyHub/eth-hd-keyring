@@ -1,11 +1,24 @@
-import Wallet, { hdkey } from 'ethereumjs-wallet';
+// import Wallet, { hdkey } from 'ethereumjs-wallet';
+import { HDKey } from 'ethereum-cryptography/hdkey';
 import SimpleKeyring from '@rabby-wallet/eth-simple-keyring';
-import * as bip39 from 'bip39';
+import * as bip39 from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english';
 import * as sigUtil from 'eth-sig-util';
+import {
+  bytesToHex,
+  publicToAddress,
+  hexToBytes,
+  privateToPublic,
+} from '@ethereumjs/util';
 
 // Options:
 const hdPathString = "m/44'/60'/0'/0";
 const type = 'HD Key Tree';
+
+interface Wallet {
+  publicKey: Uint8Array;
+  privateKey: Uint8Array;
+}
 
 interface DeserializeOption {
   hdPath?: string;
@@ -22,8 +35,8 @@ class HdKeyring extends SimpleKeyring {
   type = type;
   mnemonic: string | null = null;
   hdPath = hdPathString;
-  hdWallet?: hdkey;
-  root: hdkey | null = null;
+  hdWallet?: HDKey;
+  root: HDKey | null = null;
   wallets: Wallet[] = [];
   _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
@@ -71,9 +84,8 @@ class HdKeyring extends SimpleKeyring {
   }
 
   private initPublicKey() {
-    this.root = this.hdWallet!.derivePath(this.hdPath);
-    const wallet = this.root.getWallet();
-    this.publicKey = wallet.getPublicKey().toString('hex');
+    this.root = this.hdWallet!.derive(this.hdPath);
+    this.publicKey = bytesToHex(this.root.publicKey);
   }
 
   getPublicKey() {
@@ -84,8 +96,8 @@ class HdKeyring extends SimpleKeyring {
     this.mnemonic = mnemonic;
     this._index2wallet = {};
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    this.hdWallet = hdkey.fromMasterSeed(seed);
-    this.root = this.hdWallet!.derivePath(this.hdPath);
+    this.hdWallet = HDKey.fromMasterSeed(seed);
+    this.root = this.hdWallet!.derive(this.hdPath);
 
     if (!this.publicKey) {
       this.initPublicKey();
@@ -94,13 +106,13 @@ class HdKeyring extends SimpleKeyring {
 
   addAccounts(numberOfAccounts = 1) {
     if (!this.root) {
-      this.initFromMnemonic(bip39.generateMnemonic());
+      this.initFromMnemonic(bip39.generateMnemonic(wordlist));
     }
 
     let count = numberOfAccounts;
     let currentIdx = 0;
     const newWallets: Wallet[] = [];
-
+    
     while (count) {
       const [, wallet] = this._addressFromIndex(currentIdx);
       if (this.wallets.includes(wallet)) {
@@ -114,7 +126,7 @@ class HdKeyring extends SimpleKeyring {
     }
 
     const hexWallets = newWallets.map((w) => {
-      return sigUtil.normalize(w.getAddress().toString('hex'));
+      return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
     });
 
     return Promise.resolve(hexWallets);
@@ -196,7 +208,7 @@ class HdKeyring extends SimpleKeyring {
   getAccounts() {
     return Promise.resolve(
       this.wallets.map((w) => {
-        return sigUtil.normalize(w.getAddress().toString('hex'));
+        return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
       }),
     );
   }
@@ -215,12 +227,21 @@ class HdKeyring extends SimpleKeyring {
   _addressFromIndex(i: number): [string, Wallet] {
     if (!this._index2wallet[i]) {
       const child = this.root!.deriveChild(i);
-      const wallet = child.getWallet();
-      const address = sigUtil.normalize(wallet.getAddress().toString('hex'));
+      const wallet = {
+        publicKey: privateToPublic(child.privateKey),
+        privateKey: child.privateKey,
+      };
+      const address = sigUtil.normalize(
+        this._addressfromPublicKey(wallet.publicKey),
+      );
       this._index2wallet[i] = [address, wallet];
     }
 
     return this._index2wallet[i];
+  }
+
+  _addressfromPublicKey(publicKey: Uint8Array) {
+    return bytesToHex(publicToAddress(publicKey, true)).toLowerCase();
   }
 }
 

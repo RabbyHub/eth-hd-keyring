@@ -8,6 +8,7 @@ const {
   SignTypedDataVersion,
 } = require('@metamask/eth-sig-util');
 const ethUtil = require('ethereumjs-util');
+const newEthUtil = require('@ethereumjs/util');
 const HdKeyring = require('..').default;
 // Sample account:
 const privKeyHex =
@@ -109,19 +110,20 @@ describe('hd-keyring', function () {
   describe('#getAccounts', function () {
     it('calls getAddress on each wallet', function (done) {
       // Push a mock wallet
-      const desiredOutput = 'foo';
+      const desiredOutput = '0x410264A247892c3b2912AeE58236036A82CA209e';
       keyring.wallets.push({
-        getAddress() {
-          return {
-            toString() {
-              return desiredOutput;
-            },
-          };
-        },
+        publicKey: newEthUtil.importPublic(
+          newEthUtil.hexToBytes(
+            '0x0220381189b226eae955cf7331b649be61b6ec55ea678cb30c7371e9e07dc200bd',
+          ),
+        ),
+        privateKey: newEthUtil.hexToBytes(
+          '0x504560704904af362cab963188f571bccb1498f6ab5113b6bd8d76b6c53a963e',
+        ),
       });
 
       keyring.getAccounts().then((output) => {
-        assert.equal(output[0], `0x${desiredOutput}`);
+        assert.equal(output[0].toLowerCase(), desiredOutput.toLowerCase());
         assert.equal(output.length, 1);
         done();
       });
