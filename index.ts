@@ -7,7 +7,6 @@ import * as sigUtil from 'eth-sig-util';
 import {
   bytesToHex,
   publicToAddress,
-  hexToBytes,
   privateToPublic,
 } from '@ethereumjs/util';
 

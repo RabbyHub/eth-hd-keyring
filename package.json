@@ -31,11 +31,8 @@
     "@metamask/eth-sig-util": "^4.0.0",
     "@rabby-wallet/eth-simple-keyring": "5.0.0-alpha",
     "@scure/bip39": "^1.2.1",
-    "bip39": "^3.0.4",
     "eth-sig-util": "^3.0.1",
-    "ethereum-cryptography": "^2.1.2",
-    "ethereumjs-util": "^7.0.9",
-    "ethereumjs-wallet": "^1.0.1"
+    "ethereum-cryptography": "^2.1.2"
   },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^1.0.6",
