@@ -84,7 +84,7 @@ class HdKeyring extends SimpleKeyring {
 
   private initPublicKey() {
     this.root = this.hdWallet!.derive(this.hdPath);
-    this.publicKey = bytesToHex(this.root.publicKey);
+    this.publicKey = bytesToHex(this.root.publicKey!);
   }
 
   getPublicKey() {
@@ -227,8 +227,8 @@ class HdKeyring extends SimpleKeyring {
     if (!this._index2wallet[i]) {
       const child = this.root!.deriveChild(i);
       const wallet = {
-        publicKey: privateToPublic(child.privateKey),
-        privateKey: child.privateKey,
+        publicKey: privateToPublic(child.privateKey!),
+        privateKey: child.privateKey!,
       };
       const address = sigUtil.normalize(
         this._addressfromPublicKey(wallet.publicKey),
