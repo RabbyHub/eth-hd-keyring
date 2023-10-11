@@ -31,10 +31,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ethereumjs_wallet_1 = require("ethereumjs-wallet");
+// import Wallet, { hdkey } from 'ethereumjs-wallet';
+const hdkey_1 = require("ethereum-cryptography/hdkey");
 const eth_simple_keyring_1 = __importDefault(require("@rabby-wallet/eth-simple-keyring"));
-const bip39 = __importStar(require("bip39"));
+const bip39 = __importStar(require("@scure/bip39"));
+const english_1 = require("@scure/bip39/wordlists/english");
 const sigUtil = __importStar(require("eth-sig-util"));
+const util_1 = require("@ethereumjs/util");
 // Options:
 const hdPathString = "m/44'/60'/0'/0";
 const type = 'HD Key Tree';
@@ -83,9 +86,8 @@ class HdKeyring extends eth_simple_keyring_1.default {
         return Promise.resolve([]);
     }
     initPublicKey() {
-        this.root = this.hdWallet.derivePath(this.hdPath);
-        const wallet = this.root.getWallet();
-        this.publicKey = wallet.getPublicKey().toString('hex');
+        this.root = this.hdWallet.derive(this.hdPath);
+        this.publicKey = (0, util_1.bytesToHex)(this.root.publicKey);
     }
     getPublicKey() {
         return this.publicKey;
@@ -94,15 +96,15 @@ class HdKeyring extends eth_simple_keyring_1.default {
         this.mnemonic = mnemonic;
         this._index2wallet = {};
         const seed = bip39.mnemonicToSeedSync(mnemonic);
-        this.hdWallet = ethereumjs_wallet_1.hdkey.fromMasterSeed(seed);
-        this.root = this.hdWallet.derivePath(this.hdPath);
+        this.hdWallet = hdkey_1.HDKey.fromMasterSeed(seed);
+        this.root = this.hdWallet.derive(this.hdPath);
         if (!this.publicKey) {
             this.initPublicKey();
         }
     }
     addAccounts(numberOfAccounts = 1) {
         if (!this.root) {
-            this.initFromMnemonic(bip39.generateMnemonic());
+            this.initFromMnemonic(bip39.generateMnemonic(english_1.wordlist));
         }
         let count = numberOfAccounts;
         let currentIdx = 0;
@@ -120,7 +122,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
             }
         }
         const hexWallets = newWallets.map((w) => {
-            return sigUtil.normalize(w.getAddress().toString('hex'));
+            return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
         });
         return Promise.resolve(hexWallets);
     }
@@ -183,7 +185,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
     }
     getAccounts() {
         return Promise.resolve(this.wallets.map((w) => {
-            return sigUtil.normalize(w.getAddress().toString('hex'));
+            return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
         }));
     }
     getIndexByAddress(address) {
@@ -198,11 +200,17 @@ class HdKeyring extends eth_simple_keyring_1.default {
     _addressFromIndex(i) {
         if (!this._index2wallet[i]) {
             const child = this.root.deriveChild(i);
-            const wallet = child.getWallet();
-            const address = sigUtil.normalize(wallet.getAddress().toString('hex'));
+            const wallet = {
+                publicKey: (0, util_1.privateToPublic)(child.privateKey),
+                privateKey: child.privateKey,
+            };
+            const address = sigUtil.normalize(this._addressfromPublicKey(wallet.publicKey));
             this._index2wallet[i] = [address, wallet];
         }
         return this._index2wallet[i];
+    }
+    _addressfromPublicKey(publicKey) {
+        return (0, util_1.bytesToHex)((0, util_1.publicToAddress)(publicKey, true)).toLowerCase();
     }
 }
 HdKeyring.type = type;
