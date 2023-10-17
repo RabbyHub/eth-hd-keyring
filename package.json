@@ -29,7 +29,7 @@
   "dependencies": {
     "@ethereumjs/util": "^9.0.0",
     "@metamask/eth-sig-util": "^4.0.0",
-    "@rabby-wallet/eth-simple-keyring": "5.0.0-alpha",
+    "@rabby-wallet/eth-simple-keyring": "^5.0.1",
     "@scure/bip39": "^1.2.1",
     "eth-sig-util": "^3.0.1",
     "ethereum-cryptography": "^2.1.2"
