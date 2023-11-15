@@ -4,15 +4,28 @@ import SimpleKeyring from '@rabby-wallet/eth-simple-keyring';
 import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import * as sigUtil from 'eth-sig-util';
-import {
-  bytesToHex,
-  publicToAddress,
-  privateToPublic,
-} from '@ethereumjs/util';
+import { bytesToHex, publicToAddress, privateToPublic } from '@ethereumjs/util';
 
 // Options:
-const hdPathString = "m/44'/60'/0'/0";
 const type = 'HD Key Tree';
+
+enum HDPathType {
+  LedgerLive = 'LedgerLive',
+  Legacy = 'Legacy',
+  BIP44 = 'BIP44',
+}
+
+const HD_PATH_BASE = {
+  [HDPathType.BIP44]: "m/44'/60'/0'/0",
+  [HDPathType.Legacy]: "m/44'/60'/0'",
+  [HDPathType.LedgerLive]: "m/44'/60'/0'/0/0",
+};
+
+const HD_PATH_TYPE = {
+  [HD_PATH_BASE[HDPathType.BIP44]]: HDPathType.BIP44,
+  [HD_PATH_BASE[HDPathType.Legacy]]: HDPathType.Legacy,
+  [HD_PATH_BASE[HDPathType.LedgerLive]]: HDPathType.LedgerLive,
+};
 
 interface Wallet {
   publicKey: Uint8Array;
@@ -21,11 +34,21 @@ interface Wallet {
 
 interface DeserializeOption {
   hdPath?: string;
-  mnemonic?: string;
+  mnemonic: string;
   activeIndexes?: number[];
   byImport?: boolean;
   index?: number;
+  passphrase?: string;
+  needPassphrase?: boolean;
+  accounts?: string[];
+  accountDetails?: Record<string, AccountDetail>;
   publicKey?: string;
+}
+
+interface AccountDetail {
+  hdPath: string;
+  hdPathType: HDPathType;
+  index: number;
 }
 
 class HdKeyring extends SimpleKeyring {
@@ -33,9 +56,8 @@ class HdKeyring extends SimpleKeyring {
 
   type = type;
   mnemonic: string | null = null;
-  hdPath = hdPathString;
+  hdPath = HD_PATH_BASE[HDPathType.BIP44];
   hdWallet?: HDKey;
-  root: HDKey | null = null;
   wallets: Wallet[] = [];
   _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
@@ -44,9 +66,12 @@ class HdKeyring extends SimpleKeyring {
   perPage = 5;
   byImport = false;
   publicKey: string = '';
+  needPassphrase = false;
+  accounts: string[] = [];
+  accountDetails: Record<string, AccountDetail> = {};
 
   /* PUBLIC METHODS */
-  constructor(opts = {}) {
+  constructor(opts: DeserializeOption = {} as any) {
     super();
     this.deserialize(opts);
   }
@@ -54,81 +79,84 @@ class HdKeyring extends SimpleKeyring {
   serialize() {
     return Promise.resolve({
       mnemonic: this.mnemonic,
+      /**
+       * @deprecated
+       */
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
       byImport: this.byImport,
       index: this.index,
+      needPassphrase: this.needPassphrase,
+      accounts: this.accounts,
+      accountDetails: this.accountDetails,
       publicKey: this.publicKey,
     });
   }
 
-  deserialize(opts: DeserializeOption = {}) {
+  deserialize(opts: DeserializeOption = {} as any) {
     this.wallets = [];
     this.mnemonic = null;
-    this.root = null;
-    this.hdPath = opts.hdPath || hdPathString;
+    this.hdPath = opts.hdPath || HD_PATH_BASE[HDPathType.BIP44];
     this.byImport = !!opts.byImport;
     this.index = opts.index || 0;
+    this.needPassphrase = opts.needPassphrase || !opts.passphrase;
+    this.accounts = opts.accounts || [];
+    this.accountDetails = opts.accountDetails || {};
     this.publicKey = opts.publicKey || '';
 
     if (opts.mnemonic) {
-      this.initFromMnemonic(opts.mnemonic);
+      this.initFromMnemonic(opts.mnemonic, opts.passphrase);
     }
 
-    if (opts.activeIndexes) {
+    // activeIndexes is deprecated, if accounts is not empty, use accounts
+    if (!this.accounts.length && opts.activeIndexes) {
       return this.activeAccounts(opts.activeIndexes);
     }
 
     return Promise.resolve([]);
   }
 
-  private initPublicKey() {
-    this.root = this.hdWallet!.derive(this.hdPath);
-    this.publicKey = bytesToHex(this.root.publicKey!);
-  }
-
-  getPublicKey() {
-    return this.publicKey;
-  }
-
-  initFromMnemonic(mnemonic) {
+  initFromMnemonic(mnemonic, passphrase?: string) {
     this.mnemonic = mnemonic;
     this._index2wallet = {};
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const seed = bip39.mnemonicToSeedSync(mnemonic, passphrase);
     this.hdWallet = HDKey.fromMasterSeed(seed);
-    this.root = this.hdWallet!.derive(this.hdPath);
-
     if (!this.publicKey) {
-      this.initPublicKey();
+      const root = this.hdWallet!.derive(HD_PATH_BASE[HDPathType.BIP44]);
+      this.publicKey = bytesToHex(root.publicKey!);
     }
   }
 
   addAccounts(numberOfAccounts = 1) {
-    if (!this.root) {
+    if (!this.hdWallet) {
       this.initFromMnemonic(bip39.generateMnemonic(wordlist));
     }
 
     let count = numberOfAccounts;
     let currentIdx = 0;
-    const newWallets: Wallet[] = [];
-    
+    const addresses: string[] = [];
+
     while (count) {
-      const [, wallet] = this._addressFromIndex(currentIdx);
+      const [address, wallet] = this._addressFromIndex(currentIdx);
       if (this.wallets.includes(wallet)) {
         currentIdx++;
       } else {
         this.wallets.push(wallet);
-        newWallets.push(wallet);
-        this.activeIndexes.push(currentIdx);
+        addresses.push(address);
+        // this.activeIndexes.push(currentIdx);
+        this.setAccountDetail(address, {
+          hdPath: this.hdPath,
+          hdPathType: HD_PATH_TYPE[this.hdPath],
+          index: currentIdx,
+        });
         count--;
+      }
+      if (!this.accounts.includes(address)) {
+        this.accounts.push(address);
       }
     }
 
-    const hexWallets = newWallets.map((w) => {
-      return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
-    });
-
-    return Promise.resolve(hexWallets);
+    return Promise.resolve(addresses);
   }
 
   activeAccounts(indexes: number[]) {
@@ -139,6 +167,16 @@ class HdKeyring extends SimpleKeyring {
       this.activeIndexes.push(index);
 
       accounts.push(address);
+      // hdPath is BIP44
+      this.setAccountDetail(address, {
+        hdPath: this.hdPath,
+        hdPathType: HD_PATH_TYPE[this.hdPath],
+        index: index,
+      });
+
+      if (!this.accounts.includes(address)) {
+        this.accounts.push(address);
+      }
     }
 
     return accounts;
@@ -205,9 +243,13 @@ class HdKeyring extends SimpleKeyring {
   }
 
   getAccounts() {
+    if (this.accounts?.length) {
+      return Promise.resolve(this.accounts);
+    }
+
     return Promise.resolve(
       this.wallets.map((w) => {
-        return sigUtil.normalize(this._addressfromPublicKey(w.publicKey));
+        return sigUtil.normalize(this._addressFromPublicKey(w.publicKey));
       }),
     );
   }
@@ -221,17 +263,15 @@ class HdKeyring extends SimpleKeyring {
     return null;
   }
 
-  /* PRIVATE METHODS */
-
   _addressFromIndex(i: number): [string, Wallet] {
     if (!this._index2wallet[i]) {
-      const child = this.root!.deriveChild(i);
+      const child = this.getChildForIndex(i);
       const wallet = {
         publicKey: privateToPublic(child.privateKey!),
         privateKey: child.privateKey!,
       };
       const address = sigUtil.normalize(
-        this._addressfromPublicKey(wallet.publicKey),
+        this._addressFromPublicKey(wallet.publicKey),
       );
       this._index2wallet[i] = [address, wallet];
     }
@@ -239,9 +279,67 @@ class HdKeyring extends SimpleKeyring {
     return this._index2wallet[i];
   }
 
-  _addressfromPublicKey(publicKey: Uint8Array) {
+  private _addressFromPublicKey(publicKey: Uint8Array) {
     return bytesToHex(publicToAddress(publicKey, true)).toLowerCase();
   }
+
+  generateMnemonic() {
+    return bip39.generateMnemonic(wordlist);
+  }
+
+  setHdPath(hdPath = HD_PATH_BASE[HDPathType.BIP44]) {
+    this.hdPath = hdPath;
+  }
+
+  private getChildForIndex(index: number) {
+    return this.hdWallet!.derive(this.getPathForIndex(index));
+  }
+
+  private isLedgerLiveHdPath() {
+    return this.hdPath === HD_PATH_BASE[HDPathType.LedgerLive];
+  }
+
+  private getPathForIndex(index) {
+    return this.isLedgerLiveHdPath()
+      ? `m/44'/60'/${index}'/0/0`
+      : `${this.hdPath}/${index}`;
+  }
+
+  setPassphrase(passphrase: string) {
+    this.initFromMnemonic(this.mnemonic, passphrase);
+
+    for (const acc of this.accounts) {
+      const detail = this.getAccountDetail(acc);
+      this.setHdPath(detail.hdPath);
+      const [address, wallet] = this._addressFromIndex(detail.index);
+      if (address.toLowerCase() === acc.toLowerCase()) {
+        this.wallets.push(wallet);
+      }
+    }
+  }
+
+  /**
+   * if passphrase is correct, the publicKey will be the same as the stored one
+   */
+  checkPassphrase(passphrase: string) {
+    const seed = bip39.mnemonicToSeedSync(this.mnemonic!, passphrase);
+    const hdWallet = HDKey.fromMasterSeed(seed);
+    const root = hdWallet!.derive(HD_PATH_BASE[HDPathType.BIP44]);
+    const currentPublickey = bytesToHex(root.publicKey!);
+
+    return this.publicKey === currentPublickey;
+  }
+
+  setAccountDetail = (address: string, accountDetail: AccountDetail) => {
+    this.accountDetails = {
+      ...this.accountDetails,
+      [address.toLowerCase()]: accountDetail,
+    };
+  };
+
+  getAccountDetail = (address: string) => {
+    return this.accountDetails[address.toLowerCase()];
+  };
 }
 
 export default HdKeyring;
