@@ -382,6 +382,28 @@ describe('hd-keyring', function () {
         done();
       });
     });
+
+    it('setHdPath', function (done) {
+      const hdPathLedgerLive = "m/44'/60'/0'/0/0";
+      const hdPathBIP44 = "m/44'/60'/0'/0";
+
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 1],
+        hdPath: hdPathBIP44,
+      });
+      keyring.setHdPath(hdPathLedgerLive);
+      keyring.activeAccounts([1]);
+
+      keyring.getAccounts().then((addersses) => {
+        assert.deepEqual(addersses, [
+          firstAcct,
+          secondAcct,
+          '0x0827a0c8f451b8fcca2cd4e9c23c47a92ca69a56',
+        ]);
+        done();
+      });
+    });
   });
 
   /*

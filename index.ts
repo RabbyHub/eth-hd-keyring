@@ -59,7 +59,6 @@ class HdKeyring extends SimpleKeyring {
   hdPath = HD_PATH_BASE[HDPathType.BIP44];
   hdWallet?: HDKey;
   wallets: Wallet[] = [];
-  _index2wallet: Record<number, [string, Wallet]> = {};
   activeIndexes: number[] = [];
   index = 0;
   page = 0;
@@ -99,13 +98,14 @@ class HdKeyring extends SimpleKeyring {
     this.hdPath = opts.hdPath || HD_PATH_BASE[HDPathType.BIP44];
     this.byImport = !!opts.byImport;
     this.index = opts.index || 0;
-    this.needPassphrase = opts.needPassphrase || !opts.passphrase;
+    this.needPassphrase = opts.needPassphrase || !!opts.passphrase;
     this.accounts = opts.accounts || [];
     this.accountDetails = opts.accountDetails || {};
     this.publicKey = opts.publicKey || '';
 
     if (opts.mnemonic) {
-      this.initFromMnemonic(opts.mnemonic, opts.passphrase);
+      this.mnemonic = opts.mnemonic;
+      this.setPassphrase(opts.passphrase || '');
     }
 
     // activeIndexes is deprecated, if accounts is not empty, use accounts
@@ -118,13 +118,17 @@ class HdKeyring extends SimpleKeyring {
 
   initFromMnemonic(mnemonic, passphrase?: string) {
     this.mnemonic = mnemonic;
-    this._index2wallet = {};
     const seed = bip39.mnemonicToSeedSync(mnemonic, passphrase);
     this.hdWallet = HDKey.fromMasterSeed(seed);
     if (!this.publicKey) {
-      const root = this.hdWallet!.derive(HD_PATH_BASE[HDPathType.BIP44]);
-      this.publicKey = bytesToHex(root.publicKey!);
+      this.publicKey = this.calcBasePublicKey(this.hdWallet!);
     }
+  }
+
+  private calcBasePublicKey(hdKey: HDKey) {
+    return bytesToHex(
+      hdKey.derive(this.getHDPathBase(HDPathType.BIP44)).publicKey!,
+    );
   }
 
   addAccounts(numberOfAccounts = 1) {
@@ -138,7 +142,11 @@ class HdKeyring extends SimpleKeyring {
 
     while (count) {
       const [address, wallet] = this._addressFromIndex(currentIdx);
-      if (this.wallets.includes(wallet)) {
+      if (
+        this.wallets.find(
+          (w) => bytesToHex(w.publicKey) === bytesToHex(wallet.publicKey),
+        )
+      ) {
         currentIdx++;
       } else {
         this.wallets.push(wallet);
@@ -209,9 +217,16 @@ class HdKeyring extends SimpleKeyring {
   }
 
   removeAccount(address) {
-    super.removeAccount(address);
-    const index = this.getIndexByAddress(address);
+    const index = this.getInfoByAddress(address)?.index;
     this.activeIndexes = this.activeIndexes.filter((i) => i !== index);
+    delete this.accountDetails[address];
+    this.accounts = this.accounts.filter((acc) => acc !== address);
+    this.wallets = this.wallets.filter(
+      ({ publicKey }) =>
+        sigUtil
+          .normalize(this._addressFromPublicKey(publicKey))
+          .toLowerCase() !== address.toLowerCase(),
+    );
   }
 
   async __getPage(increment: number): Promise<
@@ -254,29 +269,39 @@ class HdKeyring extends SimpleKeyring {
     );
   }
 
-  getIndexByAddress(address: string): number | null {
-    for (const key in this._index2wallet) {
-      if (this._index2wallet[key][0].toLowerCase() === address.toLowerCase()) {
-        return Number(key);
+  getInfoByAddress(address: string): AccountDetail | null {
+    const detail = this.accountDetails[address];
+    if (detail) {
+      return detail;
+    }
+
+    for (const key in this.wallets) {
+      const wallet = this.wallets[key];
+      if (
+        sigUtil.normalize(this._addressFromPublicKey(wallet.publicKey)) ===
+        address.toLowerCase()
+      ) {
+        return {
+          index: Number(key),
+          hdPathType: HD_PATH_TYPE[this.hdPath],
+          hdPath: this.hdPath,
+        };
       }
     }
     return null;
   }
 
   _addressFromIndex(i: number): [string, Wallet] {
-    if (!this._index2wallet[i]) {
-      const child = this.getChildForIndex(i);
-      const wallet = {
-        publicKey: privateToPublic(child.privateKey!),
-        privateKey: child.privateKey!,
-      };
-      const address = sigUtil.normalize(
-        this._addressFromPublicKey(wallet.publicKey),
-      );
-      this._index2wallet[i] = [address, wallet];
-    }
+    const child = this.getChildForIndex(i);
+    const wallet = {
+      publicKey: privateToPublic(child.privateKey!),
+      privateKey: child.privateKey!,
+    };
+    const address = sigUtil.normalize(
+      this._addressFromPublicKey(wallet.publicKey),
+    );
 
-    return this._index2wallet[i];
+    return [address, wallet];
   }
 
   private _addressFromPublicKey(publicKey: Uint8Array) {
@@ -310,10 +335,12 @@ class HdKeyring extends SimpleKeyring {
 
     for (const acc of this.accounts) {
       const detail = this.getAccountDetail(acc);
-      this.setHdPath(detail.hdPath);
-      const [address, wallet] = this._addressFromIndex(detail.index);
-      if (address.toLowerCase() === acc.toLowerCase()) {
-        this.wallets.push(wallet);
+      if (detail) {
+        this.setHdPath(detail.hdPath);
+        const [address, wallet] = this._addressFromIndex(detail.index);
+        if (address.toLowerCase() === acc.toLowerCase()) {
+          this.wallets.push(wallet);
+        }
       }
     }
   }
@@ -324,10 +351,9 @@ class HdKeyring extends SimpleKeyring {
   checkPassphrase(passphrase: string) {
     const seed = bip39.mnemonicToSeedSync(this.mnemonic!, passphrase);
     const hdWallet = HDKey.fromMasterSeed(seed);
-    const root = hdWallet!.derive(HD_PATH_BASE[HDPathType.BIP44]);
-    const currentPublickey = bytesToHex(root.publicKey!);
+    const publicKey = this.calcBasePublicKey(hdWallet);
 
-    return this.publicKey === currentPublickey;
+    return this.publicKey === publicKey;
   }
 
   setAccountDetail = (address: string, accountDetail: AccountDetail) => {
@@ -340,6 +366,15 @@ class HdKeyring extends SimpleKeyring {
   getAccountDetail = (address: string) => {
     return this.accountDetails[address.toLowerCase()];
   };
+
+  private getHDPathBase(hdPathType: HDPathType) {
+    return HD_PATH_BASE[hdPathType];
+  }
+
+  async setHDPathType(hdPathType: HDPathType) {
+    const hdPath = this.getHDPathBase(hdPathType);
+    this.setHdPath(hdPath);
+  }
 }
 
 export default HdKeyring;
