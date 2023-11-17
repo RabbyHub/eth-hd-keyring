@@ -68,6 +68,7 @@ class HdKeyring extends SimpleKeyring {
   needPassphrase = false;
   accounts: string[] = [];
   accountDetails: Record<string, AccountDetail> = {};
+  passphrase?: string = '';
 
   /* PUBLIC METHODS */
   constructor(opts: DeserializeOption = {} as any) {
@@ -99,6 +100,7 @@ class HdKeyring extends SimpleKeyring {
     this.byImport = !!opts.byImport;
     this.index = opts.index || 0;
     this.needPassphrase = opts.needPassphrase || !!opts.passphrase;
+    this.passphrase = opts.passphrase;
     this.accounts = opts.accounts || [];
     this.accountDetails = opts.accountDetails || {};
     this.publicKey = opts.publicKey || '';
@@ -331,6 +333,7 @@ class HdKeyring extends SimpleKeyring {
   }
 
   setPassphrase(passphrase: string) {
+    this.passphrase = passphrase;
     this.initFromMnemonic(this.mnemonic, passphrase);
 
     for (const acc of this.accounts) {
