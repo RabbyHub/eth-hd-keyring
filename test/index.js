@@ -20,7 +20,7 @@ const firstAcct = '0x1c96099350f13d558464ec79b9be4445aa0ef579';
 const secondAcct = '0x1b00aed43a693f3a957f9feb5cc08afa031e37a0';
 
 describe('hd-keyring', function () {
-  let keyring;
+  let keyring = new HdKeyring();
   beforeEach(function () {
     keyring = new HdKeyring();
   });
@@ -334,6 +334,76 @@ describe('hd-keyring', function () {
           console.log('failed because', reason);
         });
     });
+
+    it('hdPath.Legacy', function (done) {
+      const hdPathLegacy = "m/44'/60'/0'";
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 1],
+        hdPath: hdPathLegacy,
+      });
+
+      keyring.getAccounts().then((addersses) => {
+        assert.deepEqual(addersses, [
+          '0x5a5a19b534db50801fb6dec48ea262ca3a0efda6',
+          '0x6729dd439a96d4a7bc6362c231d6931cfaa31088',
+        ]);
+        done();
+      });
+    });
+
+    it('hdPath.LedgerLive', function (done) {
+      const hdPathLedgerLive = "m/44'/60'/0'/0/0";
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 1],
+        hdPath: hdPathLedgerLive,
+      });
+
+      keyring.getAccounts().then((addersses) => {
+        assert.deepEqual(addersses, [
+          firstAcct,
+          '0x0827a0c8f451b8fcca2cd4e9c23c47a92ca69a56',
+        ]);
+        done();
+      });
+    });
+
+    it('hdPath.bip44', function (done) {
+      const hdPathBIP44 = "m/44'/60'/0'/0";
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 1],
+        hdPath: hdPathBIP44,
+      });
+
+      keyring.getAccounts().then((addersses) => {
+        assert.deepEqual(addersses, [firstAcct, secondAcct]);
+        done();
+      });
+    });
+
+    it('setHdPath', function (done) {
+      const hdPathLedgerLive = "m/44'/60'/0'/0/0";
+      const hdPathBIP44 = "m/44'/60'/0'/0";
+
+      keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 1],
+        hdPath: hdPathBIP44,
+      });
+      keyring.setHdPath(hdPathLedgerLive);
+      keyring.activeAccounts([1]);
+
+      keyring.getAccounts().then((addersses) => {
+        assert.deepEqual(addersses, [
+          firstAcct,
+          secondAcct,
+          '0x0827a0c8f451b8fcca2cd4e9c23c47a92ca69a56',
+        ]);
+        done();
+      });
+    });
   });
 
   /*
@@ -523,6 +593,89 @@ describe('hd-keyring', function () {
 
       assert.equal(activeIndexes.length, 3);
       assert.deepEqual(activeIndexes, [2, 3, 6]);
+    });
+  });
+
+  describe('accountDetails', function () {
+    it('should return correct account details', async function () {
+      const address = firstAcct;
+
+      keyring = new HdKeyring({
+        mnemonic: sampleMnemonic,
+        activeIndexes: [0, 2, 3, 6],
+      });
+
+      const accountDetail = await keyring.getAccountDetail(address);
+
+      assert.deepEqual(accountDetail, {
+        hdPath: "m/44'/60'/0'/0",
+        hdPathType: 'BIP44',
+        index: 0,
+      });
+    });
+  });
+
+  describe('passphrase', function () {
+    it('should be able to set a passphrase', async function () {
+      await keyring.deserialize({
+        mnemonic: sampleMnemonic,
+      });
+      keyring.setPassphrase('abc123');
+      keyring.activeAccounts([0, 1]);
+      const result = await keyring.getAccounts();
+
+      assert.deepEqual(result, [
+        '0x8db9506aa1c0e2c07dc03417ded629e0cffe2412',
+        '0x805eacc9c707b94581fd2a230f437bd370fe229c',
+      ]);
+    });
+
+    it('needPassphrase', async function () {
+      keyring = new HdKeyring({
+        mnemonic: sampleMnemonic,
+        needPassphrase: true,
+        accounts: [
+          '0x8db9506aa1c0e2c07dc03417ded629e0cffe2412',
+          '0x805eacc9c707b94581fd2a230f437bd370fe229c',
+        ],
+      });
+
+      assert.equal(keyring.wallets.length, 0);
+      assert.equal(keyring.accounts.length, 2);
+    });
+
+    it('get wallet when set passphrase', async function () {
+      await keyring.deserialize({
+        mnemonic: sampleMnemonic,
+        needPassphrase: true,
+        accounts: [
+          '0x8db9506aa1c0e2c07dc03417ded629e0cffe2412',
+          '0x805eacc9c707b94581fd2a230f437bd370fe229c',
+        ],
+        accountDetails: {
+          '0x8db9506aa1c0e2c07dc03417ded629e0cffe2412': {
+            hdPath: "m/44'/60'/0'/0",
+            hdPathType: 'BIP44',
+            index: 0,
+          },
+          '0x805eacc9c707b94581fd2a230f437bd370fe229c': {
+            hdPath: "m/44'/60'/0'/0",
+            hdPathType: 'BIP44',
+            index: 1,
+          },
+          [firstAcct]: {
+            hdPath: "m/44'/60'/0'/0",
+            hdPathType: 'BIP44',
+            index: 0,
+          },
+        },
+      });
+
+      assert.equal(keyring.wallets.length, 0);
+
+      keyring.setPassphrase('abc123');
+
+      assert.equal(keyring.wallets.length, 2);
     });
   });
 });
