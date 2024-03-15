@@ -242,7 +242,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
     getInfoByAddress(address) {
         const detail = this.accountDetails[address];
         if (detail) {
-            return detail;
+            return Object.assign(Object.assign({}, detail), { basePublicKey: this.publicKey });
         }
         for (const key in this.wallets) {
             const wallet = this.wallets[key];
@@ -252,6 +252,7 @@ class HdKeyring extends eth_simple_keyring_1.default {
                     index: Number(key),
                     hdPathType: HD_PATH_TYPE[this.hdPath],
                     hdPath: this.hdPath,
+                    basePublicKey: this.publicKey,
                 };
             }
         }

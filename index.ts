@@ -49,6 +49,7 @@ interface AccountDetail {
   hdPath: string;
   hdPathType: HDPathType;
   index: number;
+  basePublicKey?: string;
 }
 
 class HdKeyring extends SimpleKeyring {
@@ -274,7 +275,10 @@ class HdKeyring extends SimpleKeyring {
   getInfoByAddress(address: string): AccountDetail | null {
     const detail = this.accountDetails[address];
     if (detail) {
-      return detail;
+      return {
+        ...detail,
+        basePublicKey: this.publicKey,
+      };
     }
 
     for (const key in this.wallets) {
@@ -287,6 +291,7 @@ class HdKeyring extends SimpleKeyring {
           index: Number(key),
           hdPathType: HD_PATH_TYPE[this.hdPath],
           hdPath: this.hdPath,
+          basePublicKey: this.publicKey,
         };
       }
     }
