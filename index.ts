@@ -4,7 +4,13 @@ import SimpleKeyring from '@rabby-wallet/eth-simple-keyring';
 import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import * as sigUtil from 'eth-sig-util';
-import { bytesToHex, publicToAddress, privateToPublic } from '@ethereumjs/util';
+import {
+  bytesToHex,
+  publicToAddress,
+  privateToPublic,
+  hexToBytes,
+} from '@ethereumjs/util';
+import slip39 from 'slip39';
 
 // Options:
 const type = 'HD Key Tree';
@@ -43,6 +49,7 @@ interface DeserializeOption {
   accounts?: string[];
   accountDetails?: Record<string, AccountDetail>;
   publicKey?: string;
+  isSlip39?: boolean;
 }
 
 interface AccountDetail {
@@ -70,6 +77,7 @@ class HdKeyring extends SimpleKeyring {
   accounts: string[] = [];
   accountDetails: Record<string, AccountDetail> = {};
   passphrase?: string = '';
+  isSlip39 = false;
 
   /* PUBLIC METHODS */
   constructor(opts: DeserializeOption = {} as any) {
@@ -91,6 +99,7 @@ class HdKeyring extends SimpleKeyring {
       accounts: this.accounts,
       accountDetails: this.accountDetails,
       publicKey: this.publicKey,
+      isSlip39: this.isSlip39,
     });
   }
 
@@ -105,6 +114,7 @@ class HdKeyring extends SimpleKeyring {
     this.accounts = opts.accounts || [];
     this.accountDetails = opts.accountDetails || {};
     this.publicKey = opts.publicKey || '';
+    this.isSlip39 = opts.isSlip39 || false;
 
     if (opts.mnemonic) {
       this.mnemonic = opts.mnemonic;
@@ -119,9 +129,9 @@ class HdKeyring extends SimpleKeyring {
     return Promise.resolve([]);
   }
 
-  initFromMnemonic(mnemonic, passphrase?: string) {
+  initFromMnemonic(mnemonic: string, passphrase?: string) {
     this.mnemonic = mnemonic;
-    const seed = bip39.mnemonicToSeedSync(mnemonic, passphrase);
+    const seed = this.getSeed(mnemonic, passphrase);
     this.hdWallet = HDKey.fromMasterSeed(seed);
     if (!this.publicKey) {
       this.publicKey = this.calcBasePublicKey(this.hdWallet!);
@@ -357,7 +367,7 @@ class HdKeyring extends SimpleKeyring {
    * if passphrase is correct, the publicKey will be the same as the stored one
    */
   checkPassphrase(passphrase: string) {
-    const seed = bip39.mnemonicToSeedSync(this.mnemonic!, passphrase);
+    const seed = this.getSeed(this.mnemonic!, passphrase);
     const hdWallet = HDKey.fromMasterSeed(seed);
     const publicKey = this.calcBasePublicKey(hdWallet);
 
@@ -382,6 +392,43 @@ class HdKeyring extends SimpleKeyring {
   async setHDPathType(hdPathType: HDPathType) {
     const hdPath = this.getHDPathBase(hdPathType);
     this.setHdPath(hdPath);
+  }
+
+  getSeed(mnemonic: string, passphrase?: string) {
+    if (HdKeyring.checkMnemonicIsSlip39(mnemonic)) {
+      this.isSlip39 = true;
+      return this.slip39MnemonicToSeedSync(mnemonic, passphrase);
+    }
+    return bip39.mnemonicToSeedSync(mnemonic, passphrase);
+  }
+
+  slip39MnemonicToSeedSync(mnemonic: string, passphrase?: string) {
+    const secretShares = mnemonic.split('\n');
+    const secretBytes = slip39.recoverSecret(secretShares, passphrase);
+    const seed = hexToBytes(bytesToHex(secretBytes));
+
+    return seed;
+  }
+
+  static checkMnemonicIsSlip39(mnemonic: string) {
+    const arr = mnemonic.split('\n');
+    try {
+      HdKeyring.slip39DecodeMnemonics(arr);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static slip39DecodeMnemonics(shares: string[]) {
+    return slip39.decodeMnemonics(shares);
+  }
+
+  static validateMnemonic(mnemonic: string) {
+    if (this.checkMnemonicIsSlip39(mnemonic)) {
+      return true;
+    }
+    return bip39.validateMnemonic(mnemonic, wordlist);
   }
 }
 
