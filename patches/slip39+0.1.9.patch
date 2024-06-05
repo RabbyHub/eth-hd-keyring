@@ -1,18 +1,20 @@
 diff --git a/node_modules/slip39/src/slip39.js b/node_modules/slip39/src/slip39.js
-index aff1c16..82bf498 100644
+index aff1c16..bd3ba54 100644
 --- a/node_modules/slip39/src/slip39.js
 +++ b/node_modules/slip39/src/slip39.js
-@@ -180,6 +180,8 @@ class Slip39 {
+@@ -180,6 +180,10 @@ class Slip39 {
      return slipHelper.validateMnemonic(mnemonic);
    }
  
 +  static decodeMnemonics = slipHelper.decodeMnemonics;
 +
++  static decodeMnemonic = slipHelper.decodeMnemonic;
++
    fromPath(path) {
      this.validatePath(path);
  
 diff --git a/node_modules/slip39/src/slip39_helper.js b/node_modules/slip39/src/slip39_helper.js
-index 8bcb956..ed4a207 100644
+index 8bcb956..3bf2210 100644
 --- a/node_modules/slip39/src/slip39_helper.js
 +++ b/node_modules/slip39/src/slip39_helper.js
 @@ -100,21 +100,6 @@ Array.prototype.slip39Generate = function (m, v = (_) => _) {
@@ -37,9 +39,10 @@ index 8bcb956..ed4a207 100644
  const BIGINT_WORD_BITS = BigInt(8);
  
  function decodeBigInt(bytes) {
-@@ -1886,4 +1871,5 @@ exports = module.exports = {
+@@ -1886,4 +1871,6 @@ exports = module.exports = {
    crypt,
    bitsToBytes,
    WORD_LIST,
 +  decodeMnemonics,
++  decodeMnemonic,
  };

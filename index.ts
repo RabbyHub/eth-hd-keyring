@@ -424,6 +424,10 @@ class HdKeyring extends SimpleKeyring {
     return slip39.decodeMnemonics(shares);
   }
 
+  static slip39DecodeMnemonic(share: string) {
+    return slip39.decodeMnemonic(share);
+  }
+
   static validateMnemonic(mnemonic: string) {
     if (this.checkMnemonicIsSlip39(mnemonic)) {
       return true;
