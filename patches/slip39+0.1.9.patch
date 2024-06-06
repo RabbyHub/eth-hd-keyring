@@ -1,0 +1,48 @@
+diff --git a/node_modules/slip39/src/slip39.js b/node_modules/slip39/src/slip39.js
+index aff1c16..bd3ba54 100644
+--- a/node_modules/slip39/src/slip39.js
++++ b/node_modules/slip39/src/slip39.js
+@@ -180,6 +180,10 @@ class Slip39 {
+     return slipHelper.validateMnemonic(mnemonic);
+   }
+ 
++  static decodeMnemonics = slipHelper.decodeMnemonics;
++
++  static decodeMnemonic = slipHelper.decodeMnemonic;
++
+   fromPath(path) {
+     this.validatePath(path);
+ 
+diff --git a/node_modules/slip39/src/slip39_helper.js b/node_modules/slip39/src/slip39_helper.js
+index 8bcb956..3bf2210 100644
+--- a/node_modules/slip39/src/slip39_helper.js
++++ b/node_modules/slip39/src/slip39_helper.js
+@@ -100,21 +100,6 @@ Array.prototype.slip39Generate = function (m, v = (_) => _) {
+   return this;
+ };
+ 
+-Array.prototype.toHexString = function () {
+-  return Array.prototype.map
+-    .call(this, function (byte) {
+-      return ("0" + (byte & 0xff).toString(16)).slice(-2);
+-    })
+-    .join("");
+-};
+-
+-Array.prototype.toByteArray = function (hexString) {
+-  for (let i = 0; i < hexString.length; i = i + 2) {
+-    this.push(parseInt(hexString.substr(i, 2), 16));
+-  }
+-  return this;
+-};
+-
+ const BIGINT_WORD_BITS = BigInt(8);
+ 
+ function decodeBigInt(bytes) {
+@@ -1886,4 +1871,6 @@ exports = module.exports = {
+   crypt,
+   bitsToBytes,
+   WORD_LIST,
++  decodeMnemonics,
++  decodeMnemonic,
+ };
