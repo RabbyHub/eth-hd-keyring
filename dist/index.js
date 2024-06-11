@@ -100,27 +100,20 @@ var require_slip39_helper = __commonJS({
     var ROUND_COUNT = 4;
     var DIGEST_INDEX = 254;
     var SECRET_INDEX = 255;
-    String.prototype.slip39EncodeHex = function() {
+    var slip39EncodeHex = function(str) {
       let bytes = [];
-      for (let i = 0; i < this.length; ++i) {
-        bytes.push(this.charCodeAt(i));
+      for (let i = 0; i < str.length; ++i) {
+        bytes.push(str.charCodeAt(i));
       }
       return bytes;
     };
-    Array.prototype.slip39DecodeHex = function() {
-      let str = [];
-      const hex = this.toString().split(",");
-      for (let i = 0; i < hex.length; i++) {
-        str.push(String.fromCharCode(hex[i]));
-      }
-      return str.toString().replace(/,/g, "");
-    };
-    Array.prototype.slip39Generate = function(m, v = (_) => _) {
-      let n = m || this.length;
+    var slip39Generate = function(m, v = (_) => _) {
+      let n = m;
+      const arr = [];
       for (let i = 0; i < n; i++) {
-        this[i] = v(i);
+        arr[i] = v(i);
       }
-      return this;
+      return arr;
     };
     var BIGINT_WORD_BITS = BigInt(8);
     function decodeBigInt(bytes) {
@@ -186,9 +179,9 @@ var require_slip39_helper = __commonJS({
       }
       let IL = masterSecret.slice().slice(0, masterSecret.length / 2);
       let IR = masterSecret.slice().slice(masterSecret.length / 2);
-      const pwd = passphrase.slip39EncodeHex();
+      const pwd = slip39EncodeHex(passphrase);
       const salt = getSalt(identifier, extendableBackupFlag);
-      let range = Array().slip39Generate(ROUND_COUNT);
+      let range = slip39Generate(ROUND_COUNT);
       range = encrypt ? range : range.reverse();
       range.forEach((round) => {
         const f = roundFunction(round, pwd, iterationExponent, salt, IR);
@@ -222,7 +215,7 @@ var require_slip39_helper = __commonJS({
         );
       }
       if (threshold === 1) {
-        return Array().slip39Generate(shareCount, () => sharedSecret);
+        return slip39Generate(shareCount, () => sharedSecret);
       }
       const randomShareCount = threshold - 2;
       const randomPart = randomBytes(sharedSecret.length - DIGEST_LENGTH);
@@ -230,7 +223,7 @@ var require_slip39_helper = __commonJS({
       let baseShares = /* @__PURE__ */ new Map();
       let shares = [];
       if (randomShareCount) {
-        shares = Array().slip39Generate(
+        shares = slip39Generate(
           randomShareCount,
           () => randomBytes(sharedSecret.length)
         );
@@ -259,13 +252,13 @@ var require_slip39_helper = __commonJS({
           `Invalid padding in mnemonic or insufficient length of mnemonics (${a.length} or ${b.length})`
         );
       }
-      return Array().slip39Generate(a.length, (i) => a[i] ^ b[i]);
+      return slip39Generate(a.length, (i) => a[i] ^ b[i]);
     }
     function getSalt(identifier, extendableBackupFlag) {
       if (extendableBackupFlag) {
         return [];
       } else {
-        const salt = CUSTOMIZATION_STRING_NON_EXTENDABLE.slip39EncodeHex();
+        const salt = slip39EncodeHex(CUSTOMIZATION_STRING_NON_EXTENDABLE);
         return salt.concat(identifier);
       }
     }
@@ -289,7 +282,7 @@ var require_slip39_helper = __commonJS({
       shares.forEach((v, k) => {
         logProd = logProd + LOG_TABLE[k ^ x];
       });
-      let results = Array().slip39Generate(
+      let results = slip39Generate(
         sharesValueLengths.values().next().value,
         () => 0
       );
@@ -338,14 +331,14 @@ var require_slip39_helper = __commonJS({
       return extendableBackupFlag ? CUSTOMIZATION_STRING_EXTENDABLE : CUSTOMIZATION_STRING_NON_EXTENDABLE;
     }
     function rs1024CreateChecksum(data, extendableBackupFlag) {
-      const values = get_customization_string(extendableBackupFlag).slip39EncodeHex().concat(data).concat(Array().slip39Generate(CHECKSUM_WORDS_LENGTH, () => 0));
+      const values = slip39EncodeHex(get_customization_string(extendableBackupFlag)).concat(data).concat(slip39Generate(CHECKSUM_WORDS_LENGTH, () => 0));
       const polymod = rs1024Polymod(values) ^ 1;
       const result = Array().slip39Generate(CHECKSUM_WORDS_LENGTH, (i) => polymod >> 10 * i & 1023).reverse();
       return result;
     }
     function rs1024VerifyChecksum(data, extendableBackupFlag) {
       return rs1024Polymod(
-        get_customization_string(extendableBackupFlag).slip39EncodeHex().concat(data)
+        slip39EncodeHex(get_customization_string(extendableBackupFlag)).concat(data)
       ) === 1;
     }
     function intFromIndices(indices) {
@@ -358,7 +351,7 @@ var require_slip39_helper = __commonJS({
     }
     function intToIndices(value, length, bits) {
       const mask = BigInt((1 << bits) - 1);
-      const result = Array().slip39Generate(
+      const result = slip39Generate(
         length,
         (i) => parseInt(value >> BigInt(i) * BigInt(bits) & mask, 10)
       );
