@@ -333,7 +333,7 @@ var require_slip39_helper = __commonJS({
     function rs1024CreateChecksum(data, extendableBackupFlag) {
       const values = slip39EncodeHex(get_customization_string(extendableBackupFlag)).concat(data).concat(slip39Generate(CHECKSUM_WORDS_LENGTH, () => 0));
       const polymod = rs1024Polymod(values) ^ 1;
-      const result = Array().slip39Generate(CHECKSUM_WORDS_LENGTH, (i) => polymod >> 10 * i & 1023).reverse();
+      const result = slip39Generate(CHECKSUM_WORDS_LENGTH, (i) => polymod >> 10 * i & 1023).reverse();
       return result;
     }
     function rs1024VerifyChecksum(data, extendableBackupFlag) {
@@ -2351,6 +2351,7 @@ var require_slip39 = __commonJS({
     };
     __publicField(_Slip39, "decodeMnemonics", slipHelper.decodeMnemonics);
     __publicField(_Slip39, "decodeMnemonic", slipHelper.decodeMnemonic);
+    __publicField(_Slip39, "combineMnemonics", slipHelper.combineMnemonics);
     var Slip39 = _Slip39;
     exports2 = module2.exports = Slip39;
   }
@@ -2674,14 +2675,29 @@ var _HdKeyring = class _HdKeyring extends import_eth_simple_keyring.default {
   static checkMnemonicIsSlip39(mnemonic) {
     const arr = mnemonic.split("\n");
     try {
-      _HdKeyring.slip39DecodeMnemonics(arr);
+      _HdKeyring.slip39GetThreshold(arr);
       return true;
     } catch (e) {
       return false;
     }
   }
-  static slip39DecodeMnemonics(shares) {
-    return import_slip39.default.decodeMnemonics(shares);
+  static slip39GetThreshold(shares) {
+    try {
+      import_slip39.default.combineMnemonics(shares);
+    } catch (e) {
+      const m1 = e.message.match(/The required number of groups is (\d+)/);
+      const m2 = e.message.match(/Expected (\d+) groups/);
+      const m3 = e.message.match(/Expected (\d+) mnemonics/);
+      if (m1) {
+        return parseInt(m1[1]);
+      } else if (m2) {
+        return parseInt(m2[1]);
+      } else if (m3) {
+        return parseInt(m3[1]);
+      }
+      throw new Error("Can't get threshold from error message");
+    }
+    return shares.length;
   }
   static slip39DecodeMnemonic(share) {
     return import_slip39.default.decodeMnemonic(share);
