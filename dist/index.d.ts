@@ -107,7 +107,7 @@ declare class HdKeyring extends SimpleKeyring {
     getSeed(mnemonic: string, passphrase?: string): Uint8Array;
     slip39MnemonicToSeedSync(mnemonic: string, passphrase?: string): Uint8Array;
     static checkMnemonicIsSlip39(mnemonic: string): boolean;
-    static slip39DecodeMnemonics(shares: string[]): any;
+    static slip39GetThreshold(shares: string[]): number;
     static slip39DecodeMnemonic(share: string): any;
     static validateMnemonic(mnemonic: string): boolean;
 }

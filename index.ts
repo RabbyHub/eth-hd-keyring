@@ -413,15 +413,33 @@ class HdKeyring extends SimpleKeyring {
   static checkMnemonicIsSlip39(mnemonic: string) {
     const arr = mnemonic.split('\n');
     try {
-      HdKeyring.slip39DecodeMnemonics(arr);
+      HdKeyring.slip39GetThreshold(arr);
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  static slip39DecodeMnemonics(shares: string[]) {
-    return slip39.decodeMnemonics(shares);
+  static slip39GetThreshold(shares: string[]) {
+    try {
+      slip39.combineMnemonics(shares);
+    } catch (e) {
+      const m1 = e.message.match(/The required number of groups is (\d+)/);
+      const m2 = e.message.match(/Expected (\d+) groups/);
+      const m3 = e.message.match(/Expected (\d+) mnemonics/);
+
+      if (m1) {
+        return parseInt(m1[1]);
+      } else if (m2) {
+        return parseInt(m2[1]);
+      } else if (m3) {
+        return parseInt(m3[1]);
+      }
+
+      throw new Error("Can't get threshold from error message");
+    }
+
+    return shares.length;
   }
 
   static slip39DecodeMnemonic(share: string) {
