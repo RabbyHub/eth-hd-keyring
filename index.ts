@@ -96,7 +96,7 @@ class HdKeyring extends SimpleKeyring {
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
       byImport: this.byImport,
-      hasBackup: this.hasBackup ?? true,
+      hasBackup: this.hasBackup,
       index: this.index,
       needPassphrase: this.needPassphrase,
       accounts: this.accounts,
@@ -111,7 +111,8 @@ class HdKeyring extends SimpleKeyring {
     this.mnemonic = null;
     this.hdPath = opts.hdPath || HD_PATH_BASE[HDPathType.BIP44];
     this.byImport = !!opts.byImport;
-    this.hasBackup = opts.hasBackup ?? true;
+    this.hasBackup = opts.hasBackup;
+    console.log('opts.index', opts);
     this.index = opts.index || 0;
     this.needPassphrase = opts.needPassphrase || !!opts.passphrase;
     this.passphrase = opts.passphrase;
