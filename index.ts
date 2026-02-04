@@ -43,6 +43,7 @@ interface DeserializeOption {
   mnemonic: string;
   activeIndexes?: number[];
   byImport?: boolean;
+  hasBackup?: boolean;
   index?: number;
   passphrase?: string;
   needPassphrase?: boolean;
@@ -72,6 +73,7 @@ class HdKeyring extends SimpleKeyring {
   page = 0;
   perPage = 5;
   byImport = false;
+  hasBackup?: boolean;
   publicKey: string = '';
   needPassphrase = false;
   accounts: string[] = [];
@@ -94,6 +96,7 @@ class HdKeyring extends SimpleKeyring {
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
       byImport: this.byImport,
+      hasBackup: this.hasBackup ?? true,
       index: this.index,
       needPassphrase: this.needPassphrase,
       accounts: this.accounts,
@@ -108,6 +111,7 @@ class HdKeyring extends SimpleKeyring {
     this.mnemonic = null;
     this.hdPath = opts.hdPath || HD_PATH_BASE[HDPathType.BIP44];
     this.byImport = !!opts.byImport;
+    this.hasBackup = opts.hasBackup ?? true;
     this.index = opts.index || 0;
     this.needPassphrase = opts.needPassphrase || !!opts.passphrase;
     this.passphrase = opts.passphrase;
@@ -115,7 +119,6 @@ class HdKeyring extends SimpleKeyring {
     this.accountDetails = opts.accountDetails || {};
     this.publicKey = opts.publicKey || '';
     this.isSlip39 = opts.isSlip39 || false;
-
     if (opts.mnemonic) {
       this.mnemonic = opts.mnemonic;
       this.setPassphrase(opts.passphrase || '');
