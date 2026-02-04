@@ -65,6 +65,7 @@
   "lavamoat": {
     "allowScripts": {
       "@lavamoat/preinstall-always-fail": false,
+      "@rabby-wallet/eth-hd-keyring": true,
       "keccak": false,
       "secp256k1": false,
       "esbuild": false
