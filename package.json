@@ -24,8 +24,7 @@
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:misc --check",
     "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write",
-    "test": "yarn build && mocha",
-    "postinstall": "patch-package"
+    "test": "yarn build && mocha"
   },
   "dependencies": {
     "@ethereumjs/util": "^9.0.0",
@@ -65,7 +64,6 @@
   "lavamoat": {
     "allowScripts": {
       "@lavamoat/preinstall-always-fail": false,
-      "@rabby-wallet/eth-hd-keyring": true,
       "keccak": false,
       "secp256k1": false,
       "esbuild": false
