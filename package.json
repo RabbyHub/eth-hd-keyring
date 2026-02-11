@@ -1,6 +1,6 @@
 {
   "name": "@rabby-wallet/eth-hd-keyring",
-  "version": "4.3.2",
+  "version": "4.3.3-4",
   "description": "A simple standard interface for a seed phrase generated set of Ethereum accounts.",
   "keywords": [
     "ethereum",
@@ -55,8 +55,10 @@
     "typescript": "^4.4.4"
   },
   "engines": {
-    "node": ">= 12.0.0"
+    "node": ">= 12.0.0",
+    "yarn": "^1.22.0"
   },
+  "packageManager": "yarn@1.22.22",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -65,7 +67,8 @@
     "allowScripts": {
       "@lavamoat/preinstall-always-fail": false,
       "keccak": false,
-      "secp256k1": false
+      "secp256k1": false,
+      "esbuild": false
     }
   },
   "tsup": {

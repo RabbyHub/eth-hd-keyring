@@ -2418,6 +2418,7 @@ var _HdKeyring = class _HdKeyring extends import_eth_simple_keyring.default {
     this.deserialize(opts);
   }
   serialize() {
+    var _a;
     return Promise.resolve({
       mnemonic: this.mnemonic,
       /**
@@ -2426,6 +2427,7 @@ var _HdKeyring = class _HdKeyring extends import_eth_simple_keyring.default {
       activeIndexes: this.activeIndexes,
       hdPath: this.hdPath,
       byImport: this.byImport,
+      hasBackup: (_a = this.hasBackup) != null ? _a : true,
       index: this.index,
       needPassphrase: this.needPassphrase,
       accounts: this.accounts,
@@ -2435,10 +2437,12 @@ var _HdKeyring = class _HdKeyring extends import_eth_simple_keyring.default {
     });
   }
   deserialize(opts = {}) {
+    var _a;
     this.wallets = [];
     this.mnemonic = null;
     this.hdPath = opts.hdPath || HD_PATH_BASE["BIP44" /* BIP44 */];
     this.byImport = !!opts.byImport;
+    this.hasBackup = (_a = opts.hasBackup) != null ? _a : true;
     this.index = opts.index || 0;
     this.needPassphrase = opts.needPassphrase || !!opts.passphrase;
     this.passphrase = opts.passphrase;

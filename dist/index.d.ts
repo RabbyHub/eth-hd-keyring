@@ -15,6 +15,7 @@ interface DeserializeOption {
     mnemonic: string;
     activeIndexes?: number[];
     byImport?: boolean;
+    hasBackup?: boolean;
     index?: number;
     passphrase?: string;
     needPassphrase?: boolean;
@@ -41,6 +42,7 @@ declare class HdKeyring extends SimpleKeyring {
     page: number;
     perPage: number;
     byImport: boolean;
+    hasBackup?: boolean;
     publicKey: string;
     needPassphrase: boolean;
     accounts: string[];
@@ -56,6 +58,7 @@ declare class HdKeyring extends SimpleKeyring {
         activeIndexes: number[];
         hdPath: string;
         byImport: boolean;
+        hasBackup: boolean;
         index: number;
         needPassphrase: boolean;
         accounts: string[];
