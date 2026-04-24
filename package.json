@@ -19,7 +19,6 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsup index.ts",
-    "postinstall": "patch-package",
     "setup": "yarn install && yarn allow-scripts",
     "lint:eslint": "eslint . --cache --ext js,ts",
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
